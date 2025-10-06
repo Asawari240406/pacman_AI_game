@@ -48,7 +48,9 @@ A Pac-Man game implementation with AI techniques for both Pac-Man and ghosts, bu
 
    or run the game directly:
 
+   ```
    g++ -Iinclude -o bin/pacman src/*.cpp -lfreeglut -lopengl32 -lglu32
+   ```
 
    ```
    bin/pacman
@@ -69,6 +71,13 @@ A Pac-Man game implementation with AI techniques for both Pac-Man and ghosts, bu
 - `assets/`: Game resources (fonts, sounds, etc.)
 - `bin/`: Compiled executable
 - `obj/`: Object files generated during compilation
+
+## Output
+
+Below are some screenshots showing the gameplay and AI in action:
+
+![Gameplay Screenshot 1](assets/screenshots/game1.png)
+![Gameplay Screenshot 2](assets/screenshots/game2.png)
 
 ## License
 
