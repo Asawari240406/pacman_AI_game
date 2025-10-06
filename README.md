@@ -76,8 +76,8 @@ A Pac-Man game implementation with AI techniques for both Pac-Man and ghosts, bu
 
 Below are some screenshots showing the gameplay and AI in action:
 
-![Gameplay Screenshot 1](assets/Screenshots/game1.png)
-![Gameplay Screenshot 2](assets/Screenshots/game2.png)
+![Gameplay Screenshot 1](assets/Screenshorts/game1.png)
+![Gameplay Screenshot 2](assets/Screenshorts/game2.png)
 
 ## License
 
