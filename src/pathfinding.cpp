@@ -4,9 +4,21 @@
 #include <algorithm>
 #include <cmath>
 #include <unordered_map>
+#include <iostream>
+#include <functional>
 
 // A* pathfinding algorithm implementation
 std::vector<Position> AStar::findPath(const Maze& maze, const Position& start, const Position& goal) {
+    // If start or goal is invalid, return empty path
+    if (!maze.isValidPosition(start) || !maze.isValidPosition(goal)) {
+        return std::vector<Position>();
+    }
+    
+    // If start is goal, return path with just start
+    if (start == goal) {
+        return std::vector<Position>{start};
+    }
+
     // Priority queue for open set
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> openSet;
     
@@ -38,14 +50,24 @@ std::vector<Position> AStar::findPath(const Maze& maze, const Position& start, c
             // Calculate tentative g-score
             int tentativeGScore = gScore[currentPos] + 1;
             
-            // If neighbor not visited or has better g-score
-            if (gScore.find(neighbor) == gScore.end() || tentativeGScore < gScore[neighbor]) {
-                // Update path
+            // Check if this path to neighbor is better
+            bool isBetterPath = false;
+            if (gScore.find(neighbor) == gScore.end()) {
+                // First time visiting this node
+                isBetterPath = true;
+            } else if (tentativeGScore < gScore[neighbor]) {
+                // Found better path to this node
+                isBetterPath = true;
+            }
+            
+            if (isBetterPath) {
+                // This path is better, record it
                 cameFrom[neighbor] = currentPos;
                 gScore[neighbor] = tentativeGScore;
                 fScore[neighbor] = gScore[neighbor] + heuristic(neighbor, goal);
                 
-                // Add to open set
+                // Add to open set (we don't check if it's already there, 
+                // the priority queue will handle duplicates)
                 openSet.push(Node(fScore[neighbor], neighbor));
             }
         }
@@ -59,12 +81,13 @@ std::vector<Position> AStar::findPath(const Maze& maze, const Position& start, c
 std::vector<Position> AStar::reconstructPath(const std::map<Position, Position>& cameFrom, const Position& current) {
     std::vector<Position> path;
     Position currentPos = current;
-    path.push_back(currentPos);
     
+    // Reconstruct path backwards from goal to start
     while (cameFrom.find(currentPos) != cameFrom.end()) {
-        currentPos = cameFrom.at(currentPos);
         path.push_back(currentPos);
+        currentPos = cameFrom.at(currentPos);
     }
+    path.push_back(currentPos); // Add start position
     
     // Reverse to get path from start to goal
     std::reverse(path.begin(), path.end());
@@ -74,6 +97,16 @@ std::vector<Position> AStar::reconstructPath(const std::map<Position, Position>&
 // BFS pathfinding algorithm implementation
 std::vector<Position> BFS::findPath(const Maze& maze, const Position& start, 
                                   const Position& goal, int maxDepth) {
+    // If start or goal is invalid, return empty path
+    if (!maze.isValidPosition(start) || !maze.isValidPosition(goal)) {
+        return std::vector<Position>();
+    }
+    
+    // If start is goal, return path with just start
+    if (start == goal) {
+        return std::vector<Position>{start};
+    }
+
     // Queue for BFS
     std::queue<Position> queue;
     
@@ -86,6 +119,7 @@ std::vector<Position> BFS::findPath(const Maze& maze, const Position& start,
     queue.push(start);
     visited[start] = true;
     depth[start] = 0;
+    cameFrom[start] = start;
     
     while (!queue.empty()) {
         Position current = queue.front();
@@ -126,12 +160,13 @@ std::vector<Position> BFS::findPath(const Maze& maze, const Position& start,
 // Reconstruct path from cameFrom map
 std::vector<Position> BFS::reconstructPath(const std::map<Position, Position>& cameFrom, Position current) {
     std::vector<Position> path;
-    path.push_back(current);
     
-    while (cameFrom.find(current) != cameFrom.end()) {
-        current = cameFrom.at(current);
+    // Reconstruct path backwards from goal to start
+    while (cameFrom.find(current) != cameFrom.end() && cameFrom.at(current) != current) {
         path.push_back(current);
+        current = cameFrom.at(current);
     }
+    path.push_back(current); // Add start position
     
     // Reverse to get path from start to goal
     std::reverse(path.begin(), path.end());

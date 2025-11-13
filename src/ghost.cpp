@@ -3,11 +3,12 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cmath>
+#include <iostream>
 
 // Constructor
 Ghost::Ghost(GhostType type, const Position& startPos)
-    : position(startPos), targetPosition(startPos), direction(NONE),
-      type(type), state(SCATTER), speed(1), frightenedTimer(0) {
+    : position(startPos), targetPosition(startPos), direction(RIGHT), // Start with a direction
+      type(type), state(CHASE), speed(1), frightenedTimer(0) { // Start in CHASE mode
 }
 
 // Destructor
@@ -17,8 +18,29 @@ Ghost::~Ghost() {
 
 // Move ghost
 void Ghost::move(const Maze& maze) {
-    // Only move if we have a direction
-    if (direction != NONE && canMove(direction, maze)) {
+    // Only move if we have a direction and can move
+    if (direction != NONE) {
+        // If current direction is blocked, find a new one
+        if (!canMove(direction, maze)) {
+            // Find any valid direction
+            const Direction dirs[] = {UP, DOWN, LEFT, RIGHT};
+            std::vector<Direction> validDirs;
+            
+            for (Direction dir : dirs) {
+                if (canMove(dir, maze)) {
+                    validDirs.push_back(dir);
+                }
+            }
+            
+            if (!validDirs.empty()) {
+                direction = validDirs[rand() % validDirs.size()];
+            } else {
+                direction = NONE;
+                return;
+            }
+        }
+        
+        // Move in the current direction
         position = getNextPosition(direction);
     }
 }
@@ -47,7 +69,7 @@ void Ghost::updateAI(const Maze& maze, const Position& pacmanPos,
         std::vector<Direction> validDirs;
         
         for (Direction dir : dirs) {
-            if (canMove(dir, maze) && dir != getOppositeDirection(direction)) {
+            if (canMove(dir, maze)) {
                 validDirs.push_back(dir);
             }
         }
@@ -65,36 +87,57 @@ void Ghost::updateAI(const Maze& maze, const Position& pacmanPos,
     // Find path to target
     std::vector<Position> path = findPath(maze, position, targetPosition);
     
-    // If path is empty or has only one node (current position), move randomly
+    // If pathfinding fails or path is too short, use simple direction-based movement
     if (path.size() <= 1) {
-        const Direction dirs[] = {UP, DOWN, LEFT, RIGHT};
-        std::vector<Direction> validDirs;
+        // Use simple direction calculation instead of random
+        int dx = targetPosition.x - position.x;
+        int dy = targetPosition.y - position.y;
         
-        for (Direction dir : dirs) {
-            if (canMove(dir, maze)) {
-                validDirs.push_back(dir);
+        // Prefer horizontal or vertical movement based on larger difference
+        if (abs(dx) > abs(dy)) {
+            if (dx > 0 && canMove(RIGHT, maze)) {
+                direction = RIGHT;
+            } else if (dx < 0 && canMove(LEFT, maze)) {
+                direction = LEFT;
+            } else {
+                // If preferred direction blocked, try vertical
+                if (dy > 0 && canMove(DOWN, maze)) {
+                    direction = DOWN;
+                } else if (dy < 0 && canMove(UP, maze)) {
+                    direction = UP;
+                }
+            }
+        } else {
+            if (dy > 0 && canMove(DOWN, maze)) {
+                direction = DOWN;
+            } else if (dy < 0 && canMove(UP, maze)) {
+                direction = UP;
+            } else {
+                // If preferred direction blocked, try horizontal
+                if (dx > 0 && canMove(RIGHT, maze)) {
+                    direction = RIGHT;
+                } else if (dx < 0 && canMove(LEFT, maze)) {
+                    direction = LEFT;
+                }
             }
         }
-        
-        if (!validDirs.empty()) {
-            direction = validDirs[rand() % validDirs.size()];
-        }
-        
         return;
     }
     
-    // Get next position in path
-    Position nextPos = path[1];
-    
-    // Determine direction
-    if (nextPos.x < position.x) {
-        direction = LEFT;
-    } else if (nextPos.x > position.x) {
-        direction = RIGHT;
-    } else if (nextPos.y < position.y) {
-        direction = UP;
-    } else if (nextPos.y > position.y) {
-        direction = DOWN;
+    // Get next position in path (index 1, since index 0 is current position)
+    if (path.size() > 1) {
+        Position nextPos = path[1];
+        
+        // Determine direction based on next position
+        if (nextPos.x < position.x) {
+            direction = LEFT;
+        } else if (nextPos.x > position.x) {
+            direction = RIGHT;
+        } else if (nextPos.y < position.y) {
+            direction = UP;
+        } else if (nextPos.y > position.y) {
+            direction = DOWN;
+        }
     }
 }
 
@@ -104,7 +147,7 @@ void Ghost::setState(GhostState newState) {
     
     // Reset frightened timer
     if (state == FRIGHTENED) {
-        frightenedTimer = 30; // 30 frames of frightened state
+        frightenedTimer = 100; // Increased timer for better gameplay
     }
 }
 
@@ -186,8 +229,8 @@ Position Ghost::getNextPosition(Direction dir) const {
 // Reset position
 void Ghost::resetPosition(const Position& startPos) {
     position = startPos;
-    direction = NONE;
-    state = SCATTER;
+    direction = RIGHT; // Give a default direction
+    state = CHASE;
 }
 
 // Calculate target based on ghost type and state
